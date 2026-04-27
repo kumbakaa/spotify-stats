@@ -261,6 +261,44 @@ app.get("/", async (req, res) => {
 
   const recentRows = recentResult.rows;
 
+// 今日のTOP10 JST基準
+const todayTopResult = await pool.query(`
+  SELECT
+    track_id,
+    title,
+    artist,
+    MAX(image_url) AS image_url,
+    MAX(spotify_url) AS spotify_url,
+    COUNT(*) AS plays
+  FROM plays
+  WHERE (played_at AT TIME ZONE 'Asia/Tokyo')::date =
+        (NOW() AT TIME ZONE 'Asia/Tokyo')::date
+  GROUP BY track_id, title, artist
+  ORDER BY plays DESC
+  LIMIT 10
+`);
+
+const todayTopRows = todayTopResult.rows;
+
+
+// ここ1週間のTOP10 JST基準
+const weekTopResult = await pool.query(`
+  SELECT
+    track_id,
+    title,
+    artist,
+    MAX(image_url) AS image_url,
+    MAX(spotify_url) AS spotify_url,
+    COUNT(*) AS plays
+  FROM plays
+  WHERE played_at >= NOW() - INTERVAL '7 days'
+  GROUP BY track_id, title, artist
+  ORDER BY plays DESC
+  LIMIT 10
+`);
+
+const weekTopRows = weekTopResult.rows;
+
   // 曲ランキング
   const rankingResult = await pool.query(`
     SELECT
@@ -342,6 +380,55 @@ app.get("/", async (req, res) => {
       </div>
 
       <div class="card">
+<div class="card">
+  <h2>今日のTOP10</h2>
+  <ol>
+    ${todayTopRows
+      .map(
+        (row) => `
+          <li class="track">
+            ${
+              row.image_url
+                ? `<img src="${row.image_url}" width="50" height="50">`
+                : ""
+            }
+            <div>
+              <strong>${escapeHtml(row.title)}</strong><br>
+              ${escapeHtml(row.artist)}<br>
+              <small>${row.plays}回</small><br>
+              <a href="${row.spotify_url}" target="_blank">Spotifyで開く</a>
+            </div>
+          </li>
+        `
+      )
+      .join("")}
+  </ol>
+</div>
+
+<div class="card">
+  <h2>ここ1週間のTOP10</h2>
+  <ol>
+    ${weekTopRows
+      .map(
+        (row) => `
+          <li class="track">
+            ${
+              row.image_url
+                ? `<img src="${row.image_url}" width="50" height="50">`
+                : ""
+            }
+            <div>
+              <strong>${escapeHtml(row.title)}</strong><br>
+              ${escapeHtml(row.artist)}<br>
+              <small>${row.plays}回</small><br>
+              <a href="${row.spotify_url}" target="_blank">Spotifyで開く</a>
+            </div>
+          </li>
+        `
+      )
+      .join("")}
+  </ol>
+</div>
         <h2>最近聴いた曲</h2>
         ${recentRows
           .map(
