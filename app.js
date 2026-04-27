@@ -16,7 +16,7 @@ const { Pool } = require("pg");
 const app = express();
 
 // ポート番号
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Spotify認証情報
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -468,8 +468,8 @@ app.get("/logout", (req, res) => {
 
 // サーバー起動前にDB準備
 initDb().then(() => {
-  app.listen(PORT, () => {
-    console.log("Neon版で起動しました");
-    console.log(`http://localhost:${PORT}`);
-  });
+  app.listen(PORT, "0.0.0.0", () => {
+  console.log("Neon版で起動しました");
+  console.log(`Listening on 0.0.0.0:${PORT}`);
+ });
 });
